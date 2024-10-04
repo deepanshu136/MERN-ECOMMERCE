@@ -1,9 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import loginIcon from "../assest/signin.gif";
 import { FaEyeSlash, FaEye } from "react-icons/fa";
 import { useState } from "react";
 import imageToBase64 from "../helpers/imaetobase64";
+import { toast } from "react-toastify";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +16,8 @@ const SignUp = () => {
     confirmPassword: "",
     profilePic: "",
   });
+
+  const navigate = useNavigate();
   const handleOnChange = (e) => {
     const { name, value } = e.target;
     setData((preve) => {
@@ -25,10 +28,47 @@ const SignUp = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(data);
+    if (data.password !== data.confirmPassword) {
+      toast.error("Passwords do not match"); // Use toast for error
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          username: data.username,
+          profilePic: data.profilePic,
+        }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        toast.success("Signup successful"); // Use toast for success
+        setData({
+          email: "",
+          password: "",
+          username: "",
+          confirmPassword: "",
+          profilePic: "",
+        });
+        navigate("/login");
+      } else {
+        throw new Error(result.message || "Signup Failed");
+      }
+    } catch (err) {
+      toast.error("Error signing up: " + err.message); // Show error toast
+      console.error("Error signing up:", err);
+    }
   };
+
   const handleUploadPic = async (e) => {
     const file = e.target.files[0];
     const imagePic = await imageToBase64(file);
