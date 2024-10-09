@@ -1,19 +1,22 @@
+const bcrypt = require("bcryptjs");
+const userModel = require("../model/userModel");
+
 async function userSignInController(req, res) {
   try {
     const { email, password } = req.body;
     console.log("req.body", req.body);
-    //validate email or password
+
+    // Validate that email and password are provided
     if (!email || !password) {
       return res.status(400).json({
-        message: "email or password is required",
+        message: "Email or password is required",
         success: false,
-        err: true,
+        error: true,
       });
     }
-    //check if user exists
-    const existingUser = await userModel.findOne({
-      email,
-    });
+
+    // Check if the user exists
+    const existingUser = await userModel.findOne({ email });
     if (!existingUser) {
       return res.status(404).json({
         message: "User with this email does not exist",
@@ -21,7 +24,8 @@ async function userSignInController(req, res) {
         error: true,
       });
     }
-    //compare password
+
+    // Compare the provided password with the stored hash
     const isPasswordValid = bcrypt.compareSync(password, existingUser.password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -30,6 +34,19 @@ async function userSignInController(req, res) {
         error: true,
       });
     }
+
+    // If the sign-in is successful, return a success message
+    return res.status(200).json({
+      message: "Sign in successful",
+      user: {
+        id: existingUser._id,
+        email: existingUser.email,
+        username: existingUser.username,
+        role: existingUser.role || "GENERAL", // Include the role if it exists
+      },
+      success: true,
+      error: false,
+    });
   } catch (err) {
     res.status(500).json({
       message: err.message,
